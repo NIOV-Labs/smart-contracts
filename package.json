@@ -16,7 +16,7 @@
 		"dotenv": "^16.4.5",
 		"ethers": "^6.12.1",
 		"hardhat": "^2.22.4",
-		"hardhat-gas-reporter": "^1.0.10",
+		"hardhat-gas-reporter": "^2.2.0",
 		"solidity-coverage": "^0.8.0"
 	},
 	"dependencies": {
