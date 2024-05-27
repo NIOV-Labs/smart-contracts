@@ -21,7 +21,7 @@ async function runDeployment(name, chainId, args = []) {
 	console.log(`|| ${name} deployed to ${NewContract.target}`);
 
 	console.log(`|||| Saving address...`);
-	const roots = ['.', '../niov-backend', '../niov-frontend'];
+	const roots = ['.', '../backend', '../frontend'];
 	roots.forEach((repo) => {
 		let destination = `${repo}/utils`;
 		if (!fs.existsSync(destination)) fs.mkdirSync(destination);

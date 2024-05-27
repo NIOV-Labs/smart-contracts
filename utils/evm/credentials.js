@@ -140,8 +140,7 @@ function getCredentials(printToConsole) {
 				console.log(`|||||| ${new ethers.Wallet(key).address}`);
 			});
 		}
-		if (existsSync('../niov-backend'))
-			checkKeys('../niov-backend/.env', WALLET_KEYS);
+		if (existsSync('../backend')) checkKeys('../backend/.env', WALLET_KEYS);
 	} else {
 		const num = 5;
 		if (printToConsole)
@@ -162,7 +161,7 @@ function getCredentials(printToConsole) {
 			readFileSync('.env', 'utf-8') + `\nWALLET_KEYS=${acc}\n`
 		);
 		accounts = acc.split(',');
-		if (existsSync('../niov-backend')) checkKeys('../niov-backend/.env', acc);
+		if (existsSync('../backend')) checkKeys('../backend/.env', acc);
 	}
 
 	// PREPARE NETWORK PROVIDER CREDENTIALS

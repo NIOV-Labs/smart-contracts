@@ -3,7 +3,7 @@ const { artifacts } = require('hardhat');
 const fs = require('fs');
 const Cache = require('../utils/Cache');
 function fetchAbi(name) {
-	const roots = ['.', '../niov-backend', '../niov-frontend'];
+	const roots = ['.', '../backend', '../frontend'];
 	roots.forEach((repo) => {
 		let destination = `${repo}/utils/interfaces`;
 		if (!fs.existsSync(destination)) fs.mkdirSync(destination);
