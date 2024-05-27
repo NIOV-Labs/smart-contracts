@@ -66,56 +66,6 @@ contract PaymentProcessor is
         address _nativeToken
     ) OracleConsumer(_oracle, _nativeToken) {}
 
-    ////////////////////////////////
-    // PaymentProcessor Functions //
-    ////////////////////////////////
-    /**
-     * @notice Method for accepting the asking price of a listing
-     * @notice The owner of an NFT could unapprove the marketplace,
-     * which would cause this function to fail. Ideally you'd also
-     * have a `createOffer` functionality.
-     * @param nftAddress Address of NFT contract
-     * @param tokenId Token ID of NFT
-     *
-     * Emits `ListingClosed` Event
-     */
-    function acceptAsk(
-        address nftAddress,
-        uint tokenId
-    )
-        external
-        payable
-        isNotNftOwner(nftAddress, tokenId, msg.sender)
-        isListed(nftAddress, tokenId)
-        nonReentrant
-    {
-        Listing memory listing = _readListing(nftAddress, tokenId);
-        uint rawValue = _calculateRequiredValue(listing.price, true);
-        if (rawValue <= 0) revert PriceMustBeAboveZero();
-        // if (msg.value < rawValue) // I mean can we be nice and only accept exact change? lol
-        if (msg.value != rawValue)
-            revert PriceNotMet(nftAddress, tokenId, listing.price, rawValue);
-        _destroyListing(nftAddress, tokenId, false);
-
-        // Transact
-        IERC721(nftAddress).safeTransferFrom(
-            listing.seller,
-            msg.sender,
-            tokenId
-        );
-        _updateProceeds(listing.seller, msg.value);
-
-        emit ListingClosed(
-            msg.sender,
-            nftAddress,
-            tokenId,
-            listing.price,
-            address(0),
-            rawValue,
-            listing.seller
-        );
-    }
-
     ///////////////////////////////
     // ListingDatabase Functions //
     ///////////////////////////////
@@ -154,7 +104,7 @@ contract PaymentProcessor is
     {
         if (price <= 0 || _calculateRequiredValue(price, true) <= 0)
             revert PriceMustBeAboveZero();
-        super._createListing(nftAddress, tokenId, price, msg.sender);
+        _createListing(nftAddress, tokenId, price, msg.sender);
     }
 
     /**
@@ -243,6 +193,56 @@ contract PaymentProcessor is
         isListed(nftAddress, tokenId)
     {
         _destroyListing(nftAddress, tokenId, true);
+    }
+
+    ////////////////////////////////
+    // PaymentProcessor Functions //
+    ////////////////////////////////
+    /**
+     * @notice Method for accepting the asking price of a listing
+     * @notice The owner of an NFT could unapprove the marketplace,
+     * which would cause this function to fail. Ideally you'd also
+     * have a `createOffer` functionality.
+     * @param nftAddress Address of NFT contract
+     * @param tokenId Token ID of NFT
+     *
+     * Emits `ListingClosed` Event
+     */
+    function acceptAsk(
+        address nftAddress,
+        uint tokenId
+    )
+        external
+        payable
+        isNotNftOwner(nftAddress, tokenId, msg.sender)
+        isListed(nftAddress, tokenId)
+        nonReentrant
+    {
+        Listing memory listing = _readListing(nftAddress, tokenId);
+        uint rawValue = _calculateRequiredValue(listing.price, true);
+        if (rawValue <= 0) revert PriceMustBeAboveZero();
+        // if (msg.value < rawValue) // I mean can we be nice and only accept exact change? lol
+        if (msg.value != rawValue)
+            revert PriceNotMet(nftAddress, tokenId, listing.price, rawValue);
+        _destroyListing(nftAddress, tokenId, false);
+
+        // Transact
+        IERC721(nftAddress).safeTransferFrom(
+            listing.seller,
+            msg.sender,
+            tokenId
+        );
+        _updateProceeds(listing.seller, msg.value);
+
+        emit ListingClosed(
+            msg.sender,
+            nftAddress,
+            tokenId,
+            listing.price,
+            address(0),
+            rawValue,
+            listing.seller
+        );
     }
 
     ///////////////////////////////
