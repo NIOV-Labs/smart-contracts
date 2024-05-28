@@ -374,7 +374,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "rawValue",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "usdPennyValue",
           "type": "uint256"
         }
       ],
@@ -423,6 +428,19 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "forceWithdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "owner",
       "outputs": [
@@ -451,24 +469,77 @@
       "name": "readListing",
       "outputs": [
         {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "seller",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "usdPennyPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rawValueGas",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rawValueTkn",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct PaymentProcessorData.ListingData",
+          "name": "listingData",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
-          "name": "seller",
+          "name": "nftAddress",
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "usdPennyPrice",
-          "type": "uint256"
-        },
+          "internalType": "uint256[]",
+          "name": "tokenIds",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "readListings",
+      "outputs": [
         {
-          "internalType": "uint256",
-          "name": "rawValueGas",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rawValueTkn",
-          "type": "uint256"
+          "components": [
+            {
+              "internalType": "address",
+              "name": "seller",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "usdPennyPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rawValueGas",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rawValueTkn",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct PaymentProcessorData.ListingData[]",
+          "name": "result",
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",

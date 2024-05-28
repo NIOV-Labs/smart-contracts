@@ -29,7 +29,7 @@
 		"node": "npx hardhat node",
 		"balanceOn": "npx hardhat run ./scripts/getBalances.js --network",
 		"deployTo": "npx hardhat run ./scripts/deploy.js --network",
-		"simulate": "npx hardhat run ./scripts/simulate.js --network localhost",
+		"simulation": "npx hardhat run ./scripts/simulate.js --network localhost",
 		"sandbox": "npx hardhat run ./scripts/sandbox.js --network",
 		"dev": "concurrently --success=first --kill-others-on-fail \"npm:node\" \"npm run deployTo localhost\""
 	}
