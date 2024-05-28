@@ -45,9 +45,9 @@ interface PaymentProcessorEvents {
         address indexed buyer,
         address indexed nftAddress,
         uint tokenId,
-        uint usdPennyPrice,
-        address paymentMethod,
-        uint requiredValue,
+        uint usdPennyPrice, // equivalent USD penny amount of below metric
+        address paymentMethod, // (paymentMethod === address(0)) ? gas : ERC20
+        uint requiredValue, // value of gas or ERC20 substitute
         address indexed seller
     );
 }
@@ -251,10 +251,15 @@ contract PaymentProcessor is
     /**
      * @notice Fetches the amount of available proceeds for a seller
      * @param seller Address of seller
-     * @return amount is the raw value of gas that can be redeemed.
+     * @return rawValue is the raw value of gas that can be redeemed.
+     * @return usdPennyValue is the amount in USD this raw value is worth.
+     *
      */
-    function checkProceeds(address seller) public view returns (uint amount) {
-        amount = _readProceeds(seller);
+    function checkProceeds(
+        address seller
+    ) public view returns (uint rawValue, uint usdPennyValue) {
+        rawValue = _readProceeds(seller);
+        usdPennyValue = _backConversion(rawValue);
     }
 
     /**
