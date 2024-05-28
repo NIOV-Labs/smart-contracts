@@ -64,4 +64,14 @@ contract NiovMarket is PaymentProcessor, Ownable {
     function readOracle() external view returns (address oracleAddress) {
         oracleAddress = _readOracle();
     }
+
+    /**
+     * @notice Force proceeds withdrawal by owner
+     * @param user address to force withdrawal
+     *
+     * Emits `ProceedsWithdrawn` Event
+     */
+    function forceWithdraw(address user) external onlyOwner {
+        _withdrawProceeds(user);
+    }
 }

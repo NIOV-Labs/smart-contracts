@@ -86,6 +86,8 @@ describe('Niov Market', () => {
 		await market.connect(deployer).createListing(nftAddress, tokenId, price);
 	const readListing = async () =>
 		await market.connect(deployer).readListing(nftAddress, tokenId);
+	const readListings = async () =>
+		await market.connect(deployer).readListings(nftAddress, [tokenId]);
 	const destroyListing = async () =>
 		await market.connect(deployer).destroyListing(nftAddress, tokenId);
 	const updateListing = async (newPrice) =>
@@ -106,12 +108,27 @@ describe('Niov Market', () => {
 			describe('EXPECTATIONS', () => {
 				it('creates listing with seller and price', async () => {
 					await createListing();
+
 					const listing = await readListing();
-					assert(listing[0] === deployer.address); // seller
-					assert(parseInt(listing[1]) === price); // usdPennyPrice
+
+					assert(listing.seller === deployer.address);
+					assert(parseInt(listing.usdPennyPrice) === price);
 					const expected = await expectedValue(price);
-					assert(listing[2] === expected); // rawValueGas
-					assert(listing[3] === expected); // rawValueTkn
+					assert(listing.rawValueGas === expected);
+					assert(listing.rawValueTkn === expected);
+				});
+				it('and with readListings', async () => {
+					await createListing();
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === deployer.address);
+					assert(parseInt(listing.usdPennyPrice) === price);
+					const expected = await expectedValue(price);
+					assert(listing.rawValueGas === expected);
+					assert(listing.rawValueTkn === expected);
 				});
 				it('emits an event after creating a listing', async () => {
 					expect(await createListing())
@@ -123,11 +140,28 @@ describe('Niov Market', () => {
 					await nft
 						.connect(deployer)
 						.transferFrom(deployer.address, user.address, tokenId);
+
 					const listing = await readListing();
-					assert(listing[0] === ethers.ZeroAddress); // seller
-					assert(listing[1] === BigZero); // usdPennyPrice
-					assert(listing[2] === BigZero); // rawValueGas
-					assert(listing[3] === BigZero); // rawValueTkn
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
+				});
+				it('and with readListings', async () => {
+					await createListing();
+					await nft
+						.connect(deployer)
+						.transferFrom(deployer.address, user.address, tokenId);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
 				});
 				it('still allows users to relist NFTs after transfer', async () => {
 					await createListing();
@@ -140,13 +174,39 @@ describe('Niov Market', () => {
 					)
 						.to.emit('ListingCreated')
 						.withArgs(nftAddress, tokenId, price, user.address);
+
 					const listing = await readListing();
-					assert(listing[0] === user.address); // seller
-					assert(parseInt(listing[1]) === parseInt(price)); // price
+
+					assert(listing.seller === user.address);
+					assert(parseInt(listing.usdPennyPrice) === parseInt(price));
 					const expected = await expectedValue(price);
-					assert(listing[2] === expected); // rawValueGas
-					assert(listing[3] === expected); // rawValueTkn
+					assert(listing.rawValueGas === expected);
+					assert(listing.rawValueTkn === expected);
 				});
+
+				it('and with readListings', async () => {
+					await createListing();
+					await nft
+						.connect(deployer)
+						.transferFrom(deployer.address, user.address, tokenId);
+					await nft.connect(user).approve(marketAddress, tokenId);
+					expect(
+						await market.connect(user).createListing(nftAddress, tokenId, price)
+					)
+						.to.emit('ListingCreated')
+						.withArgs(nftAddress, tokenId, price, user.address);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === user.address);
+					assert(parseInt(listing.usdPennyPrice) === parseInt(price));
+					const expected = await expectedValue(price);
+					assert(listing.rawValueGas === expected);
+					assert(listing.rawValueTkn === expected);
+				});
+
 				it('Should translate prices correctly', async () => {
 					const rate = await exchangeRate();
 					const newPrice = rate * 100;
@@ -154,13 +214,33 @@ describe('Niov Market', () => {
 					await market
 						.connect(deployer)
 						.createListing(nftAddress, tokenId, newPrice);
+
 					const listing = await readListing();
 					// console.log(listing);
+
 					const expectedPrice = ethers.toBigInt(newPrice);
-					assert(listing[0] === deployer.address); // seller
-					expect(listing[1]).to.be.equal(expectedPrice); // rawValueGas
-					expect(listing[2]).to.be.equal(wholeEther); // rawValueGas
-					expect(listing[3]).to.be.equal(wholeEther); // rawValueTkn
+					assert(listing.seller === deployer.address);
+					expect(listing.usdPennyPrice).to.be.equal(expectedPrice);
+					expect(listing.rawValueGas).to.be.equal(wholeEther);
+					expect(listing.rawValueTkn).to.be.equal(wholeEther);
+				});
+				it('and with readListings', async () => {
+					const rate = await exchangeRate();
+					const newPrice = rate * 100;
+					const wholeEther = ethers.parseEther('1.0');
+					await market
+						.connect(deployer)
+						.createListing(nftAddress, tokenId, newPrice);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					const expectedPrice = ethers.toBigInt(newPrice);
+					assert(listing.seller === deployer.address);
+					expect(listing.usdPennyPrice).to.be.equal(expectedPrice);
+					expect(listing.rawValueGas).to.be.equal(wholeEther);
+					expect(listing.rawValueTkn).to.be.equal(wholeEther);
 				});
 				it('Double Checking...', async () => {
 					const rate = await exchangeRate();
@@ -168,11 +248,29 @@ describe('Niov Market', () => {
 						.connect(deployer)
 						.createListing(nftAddress, tokenId, 100);
 					const expected = ethers.toBigInt((1 / rate) * 10 ** 18);
+
 					const listing = await readListing();
-					assert(listing[0] === deployer.address); // seller
-					assert(listing[1] === ethers.toBigInt(100)); // usdPennyPrice
-					expect(listing[2]).to.be.equal(expected); // rawValueGas
-					expect(listing[3]).to.be.equal(expected); // rawValueTkn
+
+					assert(listing.seller === deployer.address);
+					assert(listing.usdPennyPrice === ethers.toBigInt(100));
+					expect(listing.rawValueGas).to.be.equal(expected);
+					expect(listing.rawValueTkn).to.be.equal(expected);
+				});
+				it('and with readListings', async () => {
+					const rate = await exchangeRate();
+					await market
+						.connect(deployer)
+						.createListing(nftAddress, tokenId, 100);
+					const expected = ethers.toBigInt((1 / rate) * 10 ** 18);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === deployer.address); // seller
+					assert(listing.usdPennyPrice === ethers.toBigInt(100)); // usdPennyPrice
+					expect(listing.rawValueGas).to.be.equal(expected); // rawValueGas
+					expect(listing.rawValueTkn).to.be.equal(expected); // rawValueTkn
 				});
 			});
 			describe('ERRORS', () => {
@@ -214,11 +312,26 @@ describe('Niov Market', () => {
 				it('removes listings', async () => {
 					await createListing();
 					await destroyListing();
+
 					const listing = await readListing();
-					assert(listing[0] === ethers.ZeroAddress); // seller
-					assert(listing[1] === BigZero); // usdPennyPrice
-					assert(listing[2] === BigZero); // rawValueGas
-					assert(listing[3] === BigZero); // rawValueTkn
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
+				});
+				it('and with readListings', async () => {
+					await createListing();
+					await destroyListing();
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
 				});
 				it('emits an event after deleting a listing', async () => {
 					await createListing();
@@ -255,12 +368,28 @@ describe('Niov Market', () => {
 				it('updates the price of the listing', async () => {
 					await createListing();
 					await updateListing(updatedPrice);
+
 					const listing = await readListing();
-					assert(listing[0] === deployer.address); // seller
-					assert(parseInt(listing[1]) === parseInt(updatedPrice)); // seller
+
+					assert(listing.seller === deployer.address);
+					assert(parseInt(listing.usdPennyPrice) === parseInt(updatedPrice));
 					const expected = await expectedValue(updatedPrice);
-					assert(listing[2] === expected); // rawValueGas
-					assert(listing[3] === expected); // rawValueTkn
+					assert(listing.rawValueGas === expected);
+					assert(listing.rawValueTkn === expected);
+				});
+				it('and with readListings', async () => {
+					await createListing();
+					await updateListing(updatedPrice);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === deployer.address);
+					assert(parseInt(listing.usdPennyPrice) === parseInt(updatedPrice));
+					const expected = await expectedValue(updatedPrice);
+					assert(listing.rawValueGas === expected);
+					assert(listing.rawValueTkn === expected);
 				});
 				it('emits an event after price update', async () => {
 					await createListing();
@@ -273,11 +402,28 @@ describe('Niov Market', () => {
 					expect(await updateListing(BigZero))
 						.to.emit('ListingDestroyed')
 						.withArgs(nftAddress, tokenId, deployer.address);
+
 					const listing = await readListing();
-					assert(listing[0] === ethers.ZeroAddress); // seller
-					assert(listing[1] === BigZero); // usdPennyPrice
-					assert(listing[2] === BigZero); // rawValueGas
-					assert(listing[3] === BigZero); // rawValueTkn
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
+				});
+				it('and with readListings', async () => {
+					await createListing();
+					expect(await updateListing(BigZero))
+						.to.emit('ListingDestroyed')
+						.withArgs(nftAddress, tokenId, deployer.address);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
 				});
 				it('can delete listings if token not approved', async () => {
 					await createListing();
@@ -285,11 +431,29 @@ describe('Niov Market', () => {
 					expect(await updateListing(updatedPrice))
 						.to.emit('ListingDestroyed')
 						.withArgs(nftAddress, tokenId, deployer.address);
+
 					const listing = await readListing();
-					assert(listing[0] === ethers.ZeroAddress); // seller
-					assert(listing[1] === BigZero); // usdPennyPrice
-					assert(listing[2] === BigZero); // rawValueGas
-					assert(listing[3] === BigZero); // rawValueTkn
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
+				});
+				it('and with readListings', async () => {
+					await createListing();
+					await nft.connect(deployer).approve(ethers.ZeroAddress, tokenId);
+					expect(await updateListing(updatedPrice))
+						.to.emit('ListingDestroyed')
+						.withArgs(nftAddress, tokenId, deployer.address);
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
 				});
 			});
 			describe('ERRORS', () => {
@@ -321,7 +485,7 @@ describe('Niov Market', () => {
 
 	const acceptAsk_Gas = async () => {
 		const listing = await readListing();
-		const value = listing[2]; // listing[2] === rawValueGas
+		const value = listing.rawValueGas;
 		await market.connect(user).acceptAsk(nftAddress, tokenId, { value });
 		return value;
 	};
@@ -342,22 +506,38 @@ describe('Niov Market', () => {
 				it('destroys the listing', async () => {
 					await createListing();
 					await acceptAsk_Gas();
+
 					const listing = await readListing();
-					assert(listing[0] === ethers.ZeroAddress); // seller
-					assert(listing[1] === BigZero); // usdPennyPrice
-					assert(listing[2] === BigZero); // rawValueGas
-					assert(listing[3] === BigZero); // rawValueTkn
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
+				});
+
+				it('and with readListings', async () => {
+					await createListing();
+					await acceptAsk_Gas();
+
+					const listings = await readListings();
+					expect(listings.length).to.be.equal(1);
+					const listing = listings[0];
+
+					assert(listing.seller === ethers.ZeroAddress);
+					assert(listing.usdPennyPrice === BigZero);
+					assert(listing.rawValueGas === BigZero);
+					assert(listing.rawValueTkn === BigZero);
 				});
 				it('updates the proceeds record', async () => {
 					await createListing();
 					const value = await acceptAsk_Gas();
 					const proceeds = await market.checkProceeds(deployer.address);
-					assert(proceeds == value);
+					assert(proceeds[0] === value);
 				});
 				it('emits an event after purchase', async () => {
 					await createListing();
 					const listing = await readListing();
-					const value = listing[2];
+					const value = listing.rawValueGas;
 					expect(await acceptAsk_Gas())
 						.to.emit('ListingClosed')
 						.withArgs(
@@ -435,6 +615,8 @@ describe('Niov Market', () => {
 						.to.emit('ListingClosed')
 						.withArgs(price, value, deployer.address);
 				});
+				// TODO @demo it('forcefully withdraws proceeds', async () => {});
+				// TODO @demo it('emits an event after forced withdrawal', async () => {});
 			});
 			describe('ERRORS', () => {
 				// Inline Modifiers
