@@ -14,7 +14,10 @@ import {ListingDatabase} from "./ListingDatabase.sol";
  * @notice This contract serves as the main commercial hub
  */
 
-interface PaymentProcessorErrors {
+interface PaymentProcessorData {
+    ////////////
+    // ERRORS //
+    ////////////
     // PaymentProcessor
     error PriceNotMet(
         address nftAddress,
@@ -22,34 +25,43 @@ interface PaymentProcessorErrors {
         uint usdPennyPrice,
         uint requiredValue
     );
-
-    // Commerce
     error PriceMustBeAboveZero();
-
-    // Listing
+    // ListingDatabase
     error AlreadyListed(address nftAddress, uint tokenId);
     error NotListed(address nftAddress, uint tokenId);
     // Proceeds
     error NoProceeds();
-}
 
-interface PaymentProcessorEvents {
+    ////////////
+    // EVENTS //
+    ////////////
+    // ListingDatabase
+    event ListingClosed(
+        address indexed buyer,
+        address indexed nftAddress,
+        uint tokenId,
+        uint usdPennyPrice, // equivalent USD penny amount of below metric
+        address paymentMethod, // (paymentMethod === address(0)) ? gas : ERC20
+        uint requiredValue, // value of gas or ERC20 substitute
+        address indexed seller
+    );
     // ProceedsManager
     event ProceedsWithdrawn(
         uint usdPennyValue,
         uint rawValue,
         address indexed seller
     );
+
+    /////////////
+    // STRUCTS //
+    /////////////
     // ListingDatabase
-    event ListingClosed(
-        address indexed buyer,
-        address indexed nftAddress,
-        uint tokenId,
-        uint usdPennyPrice,
-        address paymentMethod,
-        uint requiredValue,
-        address indexed seller
-    );
+    struct ListingData {
+        address seller;
+        uint usdPennyPrice;
+        uint rawValueGas;
+        uint rawValueTkn;
+    }
 }
 
 contract PaymentProcessor is
@@ -58,8 +70,7 @@ contract PaymentProcessor is
     OracleConsumer,
     ProceedsManager,
     ListingDatabase,
-    PaymentProcessorErrors,
-    PaymentProcessorEvents
+    PaymentProcessorData
 {
     constructor(
         address _oracle,
@@ -108,7 +119,7 @@ contract PaymentProcessor is
     }
 
     /**
-     * @notice External READ operation for Listing Structs
+     * @notice Public READ operation for Listing Structs
      * @param nftAddress Address of NFT contract (typically the ABT contract)
      * @param tokenId Token ID of NFT
      *
@@ -121,30 +132,36 @@ contract PaymentProcessor is
     function readListing(
         address nftAddress,
         uint tokenId
-    )
-        external
-        view
-        returns (
-            address seller,
-            uint usdPennyPrice,
-            uint rawValueGas,
-            uint rawValueTkn
-        )
-    {
+    ) public view returns (ListingData memory listingData) {
         Listing memory listing = _readListing(nftAddress, tokenId);
         bool sellerIsOwner = (listing.seller == _nftOwner(nftAddress, tokenId));
-        if (sellerIsOwner) {
-            seller = listing.seller;
-            usdPennyPrice = listing.price;
-            rawValueGas = _calculateRequiredValue(usdPennyPrice, true);
-            rawValueTkn = _calculateRequiredValue(usdPennyPrice, false);
-        } else {
-            seller = address(0);
-            usdPennyPrice = 0;
-            rawValueGas = 0;
-            rawValueTkn = 0;
+        if (sellerIsOwner)
+            listingData = ListingData(
+                listing.seller,
+                listing.price,
+                _calculateRequiredValue(listing.price, true),
+                _calculateRequiredValue(listing.price, false)
+            );
+        else listingData = ListingData(address(0), 0, 0, 0);
+    }
+
+    /**
+     * @notice Frontend READ operation for an array of ListingData
+     * @param nftAddress Address of NFT contract (typically the ABT contract)
+     * @param tokenIds uint array of tokenIds
+     *
+     */
+    function readListings(
+        address nftAddress,
+        uint[] memory tokenIds
+    ) external view returns (ListingData[] memory result) {
+        result = new ListingData[](tokenIds.length);
+        for (uint i = 0; i < tokenIds.length; i++) {
+            result[i] = readListing(nftAddress, tokenIds[i]);
         }
     }
+
+    // TODO @BONUS function readListings_multidimensional(address[] addresses, uint[][] memory tokenIds)
 
     /**
      * @notice External UPDATE operation for Listing Structs
@@ -251,10 +268,15 @@ contract PaymentProcessor is
     /**
      * @notice Fetches the amount of available proceeds for a seller
      * @param seller Address of seller
-     * @return amount is the raw value of gas that can be redeemed.
+     * @return rawValue is the raw value of gas that can be redeemed.
+     * @return usdPennyValue is the amount in USD this raw value is worth.
+     *
      */
-    function checkProceeds(address seller) public view returns (uint amount) {
-        amount = _readProceeds(seller);
+    function checkProceeds(
+        address seller
+    ) public view returns (uint rawValue, uint usdPennyValue) {
+        rawValue = _readProceeds(seller);
+        usdPennyValue = _backConversion(rawValue);
     }
 
     /**
@@ -262,14 +284,24 @@ contract PaymentProcessor is
      *
      * Emits `ProceedsWithdrawn` Event
      */
-    function withdrawProceeds() external nonReentrant {
-        uint amount = _readProceeds(msg.sender);
+    function withdrawProceeds() external {
+        _withdrawProceeds(msg.sender);
+    }
+
+    /**
+     * @notice Internal method for withdrawing proceeds
+     * @param user address to withdraw
+     *
+     * Emits `ProceedsWithdrawn` Event
+     */
+    function _withdrawProceeds(address user) internal nonReentrant {
+        uint amount = _readProceeds(user);
         if (amount <= 0) revert NoProceeds();
-        _destroyProceeds(msg.sender);
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        _destroyProceeds(user);
+        (bool success, ) = payable(user).call{value: amount}("");
         require(success, "Transfer failed");
 
         uint usdPennyValue = _backConversion(amount);
-        emit ProceedsWithdrawn(usdPennyValue, amount, msg.sender);
+        emit ProceedsWithdrawn(usdPennyValue, amount, user);
     }
 }
