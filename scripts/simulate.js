@@ -3,7 +3,7 @@ const { ethers } = hre;
 const contractUtils = require('../utils/evm/contract');
 
 const simulation = async (environment) => {
-	const { deployer, accounts, market, abt, gasToken } = environment;
+	const { deployer, accounts, market, abt } = environment;
 };
 
 (async () => {
