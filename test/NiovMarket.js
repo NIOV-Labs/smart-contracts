@@ -216,7 +216,6 @@ describe('Niov Market', () => {
 						.createListing(nftAddress, tokenId, newPrice);
 
 					const listing = await readListing();
-					// console.log(listing);
 
 					const expectedPrice = ethers.toBigInt(newPrice);
 					assert(listing.seller === deployer.address);
@@ -585,26 +584,24 @@ describe('Niov Market', () => {
 				it('withdraws proceeds', async () => {
 					await createListing();
 					await acceptAsk_Gas();
-					const deployerProceedsBefore = parseInt(
-						await market.checkProceeds(deployer.address)
-					);
-					const deployerBalanceBefore = parseInt(
+
+					const proceeds = await market.checkProceeds(deployer.address);
+					const gasProceeds = parseInt(proceeds[0]);
+					const initialBalance = parseInt(
 						await ethers.provider.getBalance(deployer.address)
+					);
+					const expectedBalance = (gasProceeds + initialBalance).toPrecision(
+						14
 					);
 
 					const txResponse = await withdrawProceeds();
 					const transactionReceipt = await txResponse.wait();
 					const { gasUsed, gasPrice } = transactionReceipt;
 					const gasCost = parseInt(gasUsed) * parseInt(gasPrice);
-
-					const deployerBalanceAfter = parseInt(
+					const finalBalance = parseInt(
 						await ethers.provider.getBalance(deployer.address)
 					);
-
-					const beforeAndGas = (deployerBalanceAfter + gasCost).toPrecision(14);
-					const expectedBalance = (
-						deployerProceedsBefore + deployerBalanceBefore
-					).toPrecision(14);
+					const beforeAndGas = (finalBalance + gasCost).toPrecision(14);
 
 					expect(beforeAndGas).to.be.equal(expectedBalance);
 				});
@@ -615,8 +612,59 @@ describe('Niov Market', () => {
 						.to.emit('ListingClosed')
 						.withArgs(price, value, deployer.address);
 				});
-				// TODO @demo it('forcefully withdraws proceeds', async () => {});
-				// TODO @demo it('emits an event after forced withdrawal', async () => {});
+				it('forcefully withdraws proceeds', async () => {
+					// await createListing();
+					await nft
+						.connect(deployer)
+						.transferFrom(deployer.address, user.address, tokenId);
+					await nft.connect(user).approve(marketAddress, tokenId);
+					await market.connect(user).createListing(nftAddress, tokenId, price);
+
+					// const value = await acceptAsk_Gas();
+					const listing = await readListing();
+					const value = listing.rawValueGas;
+					await market
+						.connect(deployer)
+						.acceptAsk(nftAddress, tokenId, { value });
+
+					const proceeds = await market.checkProceeds(user.address);
+					const gasProceeds = parseInt(proceeds[0]);
+					const initialBalance = parseInt(
+						await ethers.provider.getBalance(user.address)
+					);
+					const expectedBalance = (gasProceeds + initialBalance).toPrecision(
+						14
+					);
+
+					const txResponse = await market
+						.connect(deployer)
+						.forceWithdraw(user.address);
+					await txResponse.wait();
+					const finalBalance = parseInt(
+						await ethers.provider.getBalance(user.address)
+					).toPrecision(14);
+
+					expect(finalBalance).to.be.equal(expectedBalance);
+				});
+				it('emits an event after forced  withdrawal', async () => {
+					// await createListing();
+					await nft
+						.connect(deployer)
+						.transferFrom(deployer.address, user.address, tokenId);
+					await nft.connect(user).approve(marketAddress, tokenId);
+					await market.connect(user).createListing(nftAddress, tokenId, price);
+
+					// const value = await acceptAsk_Gas();
+					const listing = await readListing();
+					const value = listing.rawValueGas;
+					await market
+						.connect(deployer)
+						.acceptAsk(nftAddress, tokenId, { value });
+
+					expect(await market.connect(deployer).forceWithdraw(user.address))
+						.to.emit('ListingClosed')
+						.withArgs(price, value, user.address);
+				});
 			});
 			describe('ERRORS', () => {
 				// Inline Modifiers
