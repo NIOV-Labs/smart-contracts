@@ -2,7 +2,7 @@
 const hre = require('hardhat');
 const { ethers } = hre;
 const { isLocalhost, checkBalances } = require('./utils/hardhat');
-const deployment = require('../utils/evm/deployment');
+const deployment = require('./utils/deployment');
 const oracles = require('./utils/oracles');
 
 (async () => {
@@ -13,16 +13,13 @@ const oracles = require('./utils/oracles');
 
 	let EthereumLinkSim, PolygonLinkSim, WETH9, WMATIC;
 	if (isDev) {
-		EthereumLinkSim = await deployment.andVerify('EthereumLinkSim', chainId);
-		PolygonLinkSim = await deployment.andVerify('PolygonLinkSim', chainId);
-		WETH9 = await deployment.andVerify('WETH9', chainId);
-		WMATIC = await deployment.andVerify('WMATIC', chainId);
+		EthereumLinkSim = await deployment.andVerify('EthereumLinkSim');
+		PolygonLinkSim = await deployment.andVerify('PolygonLinkSim');
+		WETH9 = await deployment.andVerify('WETH9');
+		WMATIC = await deployment.andVerify('WMATIC');
 	}
 
-	const AssetBoundToken = await deployment.andVerify(
-		'AssetBoundToken',
-		chainId
-	);
+	const AssetBoundToken = await deployment.andVerify('AssetBoundToken');
 
 	const nativeOracle = isDev
 		? EthereumLinkSim.target
@@ -31,7 +28,7 @@ const oracles = require('./utils/oracles');
 	// TODO get token addresses
 	const nativeToken = isDev ? WETH9.target : WETH9.target;
 
-	const NiovMarket = await deployment.andVerify('NiovMarket', chainId, [
+	const NiovMarket = await deployment.andVerify('NiovMarket', [
 		nativeOracle,
 		nativeToken,
 	]);

@@ -1,6 +1,4 @@
-const fs = require('fs');
-const Cache = require('../../utils/Cache');
-const { ethers, config, artifacts } = require('hardhat');
+const { ethers, config } = require('hardhat');
 
 const isLocalhost = (chainId) => {
 	return [31337, 1337].includes(parseInt(chainId));
@@ -51,20 +49,9 @@ async function checkBalances() {
 	} else await logBalances(signers);
 }
 
-function transferAbi(contractName) {
-	const roots = ['.', '../backend', '../frontend'];
-	roots.forEach((repo) => {
-		let destination = `${repo}/deployment/interfaces`;
-		if (!fs.existsSync(destination)) fs.mkdirSync(destination, true);
-		const abi = new Cache(`${destination}/${contractName}.json`);
-		abi.update({ abi: artifacts.readArtifactSync(contractName).abi });
-	});
-}
-
 module.exports = {
 	isLocalhost,
 	balanceOf,
 	envSigners,
 	checkBalances,
-	transferAbi,
 };
