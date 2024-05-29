@@ -22,6 +22,7 @@
 		"deployTo": "npx hardhat run ./scripts/deploy.js --network",
 		"dev": "concurrently --success=first --kill-others-on-fail \"npm:node\" \"npm run deployTo localhost\"",
 		"simulation": "npx hardhat run ./scripts/simulate.js --network localhost",
-		"sandbox": "npx hardhat run ./scripts/sandbox.js --network"
+		"sandbox": "npx hardhat run ./scripts/sandbox.js --network",
+		"cleanup": "node ./scripts/cleanup.js"
 	}
 }
