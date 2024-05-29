@@ -1,17 +1,18 @@
 // require('../utils/evm/diagnostics');
 const hre = require('hardhat');
 const { ethers } = hre;
-const fundTestnetAccounts = require('./utils/funding');
+const { isLocalhost, checkBalances } = require('./utils/hardhat');
 const deployment = require('../utils/evm/deployment');
 const oracles = require('./utils/oracles');
 
 (async () => {
+	await checkBalances();
+	console.log('\nRunning Deployment!');
 	const { chainId } = await ethers.provider.getNetwork();
-	const isDev = parseInt(chainId) === 31337 || chainId === 1337;
+	const isDev = isLocalhost(chainId);
 
 	let EthereumLinkSim, PolygonLinkSim, WETH9, WMATIC;
 	if (isDev) {
-		await fundTestnetAccounts();
 		EthereumLinkSim = await deployment.andVerify('EthereumLinkSim', chainId);
 		PolygonLinkSim = await deployment.andVerify('PolygonLinkSim', chainId);
 		WETH9 = await deployment.andVerify('WETH9', chainId);
@@ -20,10 +21,6 @@ const oracles = require('./utils/oracles');
 
 	const AssetBoundToken = await deployment.andVerify(
 		'AssetBoundToken',
-		chainId
-	);
-	const NiovLigandToken = await deployment.andVerify(
-		'NiovLigandToken',
 		chainId
 	);
 

@@ -5,30 +5,23 @@
 	"main": "index.js",
 	"license": "MIT",
 	"devDependencies": {
-		"@nomicfoundation/hardhat-chai-matchers": "^2.0.6",
-		"@nomicfoundation/hardhat-ethers": "^3.0.6",
-		"@nomicfoundation/hardhat-network-helpers": "^1.0.10",
 		"@nomicfoundation/hardhat-toolbox": "^5.0.0",
-		"@nomicfoundation/hardhat-verify": "^2.0.7",
-		"chai": "^4.2.0",
-		"dotenv": "^16.4.5",
-		"ethers": "^6.12.1",
-		"hardhat": "^2.22.4",
-		"solidity-coverage": "^0.8.12"
+		"concurrently": "^8.2.2",
+		"hardhat": "^2.22.4"
 	},
 	"dependencies": {
 		"@chainlink/contracts": "^1.1.1",
 		"@openzeppelin/contracts": "^5.0.2",
-		"concurrently": "^8.2.2"
+		"dotenv": "^16.4.5"
 	},
 	"scripts": {
-		"diag": "npx hardhat run ./utils/evm/diagnostics.js",
-		"test": "npx hardhat test",
 		"node": "npx hardhat node",
+		"test": "npx hardhat test",
+		"diag": "npx hardhat run ./scripts/diagnostics.js",
 		"balanceOn": "npx hardhat run ./scripts/getBalances.js --network",
 		"deployTo": "npx hardhat run ./scripts/deploy.js --network",
+		"dev": "concurrently --success=first --kill-others-on-fail \"npm:node\" \"npm run deployTo localhost\"",
 		"simulation": "npx hardhat run ./scripts/simulate.js --network localhost",
-		"sandbox": "npx hardhat run ./scripts/sandbox.js --network",
-		"dev": "concurrently --success=first --kill-others-on-fail \"npm:node\" \"npm run deployTo localhost\""
+		"sandbox": "npx hardhat run ./scripts/sandbox.js --network"
 	}
 }
