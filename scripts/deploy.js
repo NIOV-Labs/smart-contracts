@@ -5,6 +5,12 @@ const { isLocalhost, checkBalances } = require('./utils/hardhat');
 const deployment = require('./utils/deployment');
 const oracles = require('./utils/oracles');
 
+// For contracts that are deployed by a factory contract
+function xfer(contractName) {
+	const roots = ['.', '../backend', '../frontend'];
+	deployment.transferAbi(contractName, roots);
+}
+
 (async () => {
 	await checkBalances();
 	console.log('\nRunning Deployment!');
@@ -32,6 +38,8 @@ const oracles = require('./utils/oracles');
 		nativeOracle,
 		nativeToken,
 	]);
+
+	// xfer('ABT010');
 })().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;
