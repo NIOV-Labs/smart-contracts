@@ -14,11 +14,7 @@ import {ListingDatabase} from "./ListingDatabase.sol";
  * @notice This contract serves as the main commercial hub
  */
 
-interface PaymentProcessorData {
-    ////////////
-    // ERRORS //
-    ////////////
-    // PaymentProcessor
+interface PaymentProcessorErrors {
     error PriceNotMet(
         address nftAddress,
         uint tokenId,
@@ -26,36 +22,29 @@ interface PaymentProcessorData {
         uint requiredValue
     );
     error PriceMustBeAboveZero();
-    // ListingDatabase
     error AlreadyListed(address nftAddress, uint tokenId);
     error NotListed(address nftAddress, uint tokenId);
-    // Proceeds
     error NoProceeds();
+}
 
-    ////////////
-    // EVENTS //
-    ////////////
-    // ListingDatabase
+interface PaymentProcessorEvents {
     event ListingClosed(
         address indexed buyer,
         address indexed nftAddress,
         uint tokenId,
-        uint usdPennyPrice, // equivalent USD penny amount of below metric
-        address paymentMethod, // (paymentMethod === address(0)) ? gas : ERC20
-        uint requiredValue, // value of gas or ERC20 substitute
+        uint usdPennyPrice,
+        address paymentMethod,
+        uint requiredValue,
         address indexed seller
     );
-    // ProceedsManager
     event ProceedsWithdrawn(
         uint usdPennyValue,
         uint rawValue,
         address indexed seller
     );
+}
 
-    /////////////
-    // STRUCTS //
-    /////////////
-    // ListingDatabase
+interface PaymentProcessorData {
     struct ListingData {
         address seller;
         uint usdPennyPrice;
@@ -64,13 +53,53 @@ interface PaymentProcessorData {
     }
 }
 
+interface IPaymentProcessor is PaymentProcessorData {
+    ///////////////////////////////
+    // ListingDatabase Functions //
+    ///////////////////////////////
+    function createListing(
+        address nftAddress,
+        uint tokenId,
+        uint price
+    ) external;
+
+    function readListing(
+        address nftAddress,
+        uint tokenId
+    ) external view returns (ListingData memory listingData);
+
+    function updateListing(
+        address nftAddress,
+        uint tokenId,
+        uint newPrice
+    ) external;
+
+    function destroyListing(address nftAddress, uint tokenId) external;
+
+    ////////////////////////////////
+    // PaymentProcessor Functions //
+    ////////////////////////////////
+    function acceptAsk(address nftAddress, uint tokenId) external payable;
+
+    ///////////////////////////////
+    // ProceedsManager Functions //
+    ///////////////////////////////
+    function checkProceeds(
+        address seller
+    ) external view returns (uint rawValue, uint usdPennyValue);
+
+    function withdrawProceeds() external;
+}
+
 contract PaymentProcessor is
     NftUtils,
     ReentrancyGuard,
     OracleConsumer,
     ProceedsManager,
     ListingDatabase,
-    PaymentProcessorData
+    PaymentProcessorErrors,
+    PaymentProcessorEvents,
+    IPaymentProcessor
 {
     constructor(
         address _oracle,
@@ -143,22 +172,6 @@ contract PaymentProcessor is
                 _calculateRequiredValue(listing.price, false)
             );
         else listingData = ListingData(address(0), 0, 0, 0);
-    }
-
-    /**
-     * @notice Frontend READ operation for an array of ListingData
-     * @param nftAddress Address of NFT contract (typically the ABT contract)
-     * @param tokenIds uint array of tokenIds
-     *
-     */
-    function readListings(
-        address nftAddress,
-        uint[] memory tokenIds
-    ) external view returns (ListingData[] memory result) {
-        result = new ListingData[](tokenIds.length);
-        for (uint i = 0; i < tokenIds.length; i++) {
-            result[i] = readListing(nftAddress, tokenIds[i]);
-        }
     }
 
     // TODO @BONUS function readListings_multidimensional(address[] addresses, uint[][] memory tokenIds)

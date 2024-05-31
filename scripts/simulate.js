@@ -3,7 +3,7 @@ const { ethers } = hre;
 const contractUtils = require('../utils/evm/contract');
 
 const listNfts = async (environment) => {
-	const { deployer, accounts, market, abt } = environment;
+	const { deployer, accounts, market, abt, reader } = environment;
 	console.log('|| Listing NFTs...');
 	for (const account of accounts) {
 		const inventory = await abt.inventoryOf(account.address);
@@ -27,13 +27,13 @@ const listNfts = async (environment) => {
 
 const buyNfts = async (environment) => {
 	console.log('|| Making Purchases...');
-	const { deployer, accounts, market, abt } = environment;
+	const { deployer, accounts, market, abt, reader } = environment;
 	const numTokens = await abt.numTokens();
 	const tokenIds = Array.from({ length: parseInt(numTokens) }, (_, i) => i + 1);
 	for (const account of accounts) {
 		let listings;
 		try {
-			listings = await market.readListings(abt.target, tokenIds);
+			listings = await reader.readListings(abt.target, tokenIds);
 		} catch (err) {
 			console.error('Error fetching listings:', err);
 			continue;
@@ -84,7 +84,7 @@ const buyNfts = async (environment) => {
 
 const withdrawEarnings = async (environment) => {
 	console.log('|| Withdrawing Proceeds...');
-	const { deployer, accounts, market, abt } = environment;
+	const { deployer, accounts, market, abt, reader } = environment;
 	for (const account of accounts) {
 		const { rawValue, usdPennyValue } = await market.checkProceeds(
 			account.address
@@ -111,6 +111,7 @@ const withdrawEarnings = async (environment) => {
 	console.log('Gathering Contracts on localhost...');
 	const market = contractUtils.retrieve('NiovMarket', 31337, deployer);
 	const abt = contractUtils.retrieve('AssetBoundToken', 31337, deployer);
+	const reader = contractUtils.retrieve('MarketReader', 31337, deployer);
 
 	console.log('Minting Tokens & Approving Them for Marketplace Interaction...');
 	for (const account of accounts) {
@@ -128,7 +129,7 @@ const withdrawEarnings = async (environment) => {
 	}
 
 	console.log('\nBEGIN SIMULATION');
-	const environment = { deployer, accounts, market, abt };
+	const environment = { deployer, accounts, market, abt, reader };
 	await listNfts(environment);
 	await buyNfts(environment);
 	await withdrawEarnings(environment);

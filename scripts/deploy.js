@@ -39,6 +39,10 @@ function xfer(contractName) {
 		nativeToken,
 	]);
 
+	const MarketReader = await deployment.andVerify('MarketReader', [
+		NiovMarket.target,
+	]);
+
 	// xfer('ABT010');
 })().catch((error) => {
 	console.error(error);
