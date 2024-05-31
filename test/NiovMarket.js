@@ -6,6 +6,7 @@ const { deployCoreContracts } = require('./utils/deployment');
 describe('Niov Market', () => {
 	let accounts, deployer, user;
 	let token, oracle, market, nft;
+	let reader;
 	let altToken, altOracle;
 
 	const tokenId = 1;
@@ -27,6 +28,11 @@ describe('Niov Market', () => {
 		// setup
 		await nft.connect(deployer).mintTo(deployer.address);
 		await nft.connect(deployer).approve(market.target, tokenId);
+
+		///////////////////
+		// DEPLOY READER //
+		///////////////////
+		reader = await deployContract(deployer, 'MarketReader', [market.target]);
 
 		////////////////////////
 		// DEPLOY SUBSTITUTES //
@@ -68,6 +74,19 @@ describe('Niov Market', () => {
 		describe('createListing & readListing', () => {
 			describe('EXPECTATIONS', () => {
 				it('creates listing with seller and price', async () => {
+					{
+						const permissions = await reader.canCreateListing(
+							deployer.address,
+							nft.target,
+							tokenId,
+							price
+						);
+						assert(permissions.canCreate === true);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.notListed === true);
+						assert(permissions.nftIsApprovedForMarket === true);
+						assert(permissions.nonZeroPrice === true);
+					}
 					await createListing();
 
 					const listing = await readListing();
@@ -102,6 +121,19 @@ describe('Niov Market', () => {
 						.connect(deployer)
 						.transferFrom(deployer.address, user.address, tokenId);
 					await nft.connect(user).approve(market.target, tokenId);
+					{
+						const permissions = await reader.canCreateListing(
+							user.address,
+							nft.target,
+							tokenId,
+							price
+						);
+						assert(permissions.canCreate === true);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.notListed === true);
+						assert(permissions.nftIsApprovedForMarket === true);
+						assert(permissions.nonZeroPrice === true);
+					}
 					expect(
 						await market.connect(user).createListing(nft.target, tokenId, price)
 					)
@@ -152,23 +184,76 @@ describe('Niov Market', () => {
 			describe('ERRORS', () => {
 				// External Modifiers
 				it('reverts if anyone but the owner tries to call', async () => {
+					{
+						let permissions = await reader.canCreateListing(
+							user.address,
+							nft.target,
+							tokenId,
+							price
+						);
+						assert(permissions.canCreate === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.notListed === true);
+						assert(permissions.nftIsApprovedForMarket === true);
+						assert(permissions.nonZeroPrice === true);
+					}
 					await expect(
 						market.connect(user).createListing(nft.target, tokenId, price)
 					).to.be.revertedWithCustomError(market, 'SpenderNotOwner');
-					// even if they add approval
 					await nft.connect(deployer).approve(user.address, tokenId);
+					// even if they add approval
+					{
+						permissions = await reader.canCreateListing(
+							user.address,
+							nft.target,
+							tokenId,
+							price
+						);
+						assert(permissions.canCreate === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.notListed === true);
+						assert(permissions.nftIsApprovedForMarket === false);
+						assert(permissions.nonZeroPrice === true);
+					}
+
 					await expect(
 						market.connect(user).createListing(nft.target, tokenId, price)
 					).to.be.revertedWithCustomError(market, 'SpenderNotOwner');
 				});
 				it('reverts if there is already a listing', async () => {
 					await createListing();
+					{
+						const permissions = await reader.canCreateListing(
+							deployer.address,
+							nft.target,
+							tokenId,
+							price
+						);
+						assert(permissions.canCreate === false);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.notListed === false);
+						assert(permissions.nftIsApprovedForMarket === true);
+						assert(permissions.nonZeroPrice === true);
+					}
 					await expect(createListing())
 						.to.be.revertedWithCustomError(market, 'AlreadyListed')
 						.withArgs(nft.target, tokenId);
 				});
 				it('needs approvals to list item', async () => {
 					await nft.connect(deployer).approve(ethers.ZeroAddress, tokenId);
+					{
+						const permissions = await reader.canCreateListing(
+							deployer.address,
+							nft.target,
+							tokenId,
+							price
+						);
+						assert(permissions.canCreate === false);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.notListed === true);
+						assert(permissions.nftIsApprovedForMarket === false);
+						assert(permissions.nonZeroPrice === true);
+					}
 					await expect(createListing()).to.be.revertedWithCustomError(
 						market,
 						'NotApprovedForMarketplace'
@@ -176,6 +261,19 @@ describe('Niov Market', () => {
 				});
 				// Inline Modifiers
 				it('reverts if the price is 0', async () => {
+					{
+						const permissions = await reader.canCreateListing(
+							deployer.address,
+							nft.target,
+							tokenId,
+							BigZero
+						);
+						assert(permissions.canCreate === false);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.notListed === true);
+						assert(permissions.nftIsApprovedForMarket === true);
+						assert(permissions.nonZeroPrice === false);
+					}
 					await expect(
 						market.createListing(nft.target, tokenId, BigZero)
 					).revertedWithCustomError(market, 'PriceMustBeAboveZero');
@@ -187,6 +285,16 @@ describe('Niov Market', () => {
 			describe('EXPECTATIONS', () => {
 				it('removes listings', async () => {
 					await createListing();
+					{
+						let permissions = await reader.canDestroyListing(
+							deployer.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canDestroy === true);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.isListed === true);
+					}
 					await destroyListing();
 
 					const listing = await readListing();
@@ -208,17 +316,47 @@ describe('Niov Market', () => {
 				// Public Modifiers
 				it('reverts if anyone but the owner tries to call', async () => {
 					await createListing();
+					{
+						let permissions = await reader.canDestroyListing(
+							user.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canDestroy === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.isListed === true);
+					}
 					await expect(
 						market.connect(user).destroyListing(nft.target, tokenId)
 					).to.be.revertedWithCustomError(market, 'SpenderNotOwner');
 					// even if they add approval
 					await nft.connect(deployer).approve(user.address, tokenId);
+					{
+						let permissions = await reader.canDestroyListing(
+							user.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canDestroy === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.isListed === true);
+					}
 					await expect(
 						market.connect(user).destroyListing(nft.target, tokenId)
 					).to.be.revertedWithCustomError(market, 'SpenderNotOwner');
 				});
 				// Internal Modifiers
 				it('reverts if there is no listing', async () => {
+					{
+						let permissions = await reader.canDestroyListing(
+							deployer.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canDestroy === false);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.isListed === false);
+					}
 					await expect(destroyListing())
 						.to.be.revertedWithCustomError(market, 'NotListed')
 						.withArgs(nft.target, tokenId);
@@ -231,6 +369,26 @@ describe('Niov Market', () => {
 			describe('EXPECTATIONS', () => {
 				it('updates the price of the listing', async () => {
 					await createListing();
+					{
+						let permissions = await reader.canUpdateListing(
+							deployer.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === true);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.isListed === true);
+					}
+					{
+						let prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							updatedPrice
+						);
+						assert(prediction.willDestroy === false);
+						assert(prediction.zeroPrice === false);
+						assert(prediction.nftNotApprovedForMarket === false);
+					}
 					await updateListing(updatedPrice);
 
 					const listing = await readListing();
@@ -250,6 +408,26 @@ describe('Niov Market', () => {
 				});
 				it('can delete listings if price <= 0', async () => {
 					await createListing();
+					{
+						let permissions = await reader.canUpdateListing(
+							deployer.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === true);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.isListed === true);
+					}
+					{
+						let prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							BigZero
+						);
+						assert(prediction.willDestroy === true);
+						assert(prediction.zeroPrice === true);
+						assert(prediction.nftNotApprovedForMarket === false);
+					}
 					expect(await updateListing(BigZero))
 						.to.emit('ListingDestroyed')
 						.withArgs(nft.target, tokenId, deployer.address);
@@ -265,6 +443,26 @@ describe('Niov Market', () => {
 				it('can delete listings if token not approved', async () => {
 					await createListing();
 					await nft.connect(deployer).approve(ethers.ZeroAddress, tokenId);
+					{
+						let permissions = await reader.canUpdateListing(
+							deployer.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === true);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.isListed === true);
+					}
+					{
+						let prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							updatedPrice
+						);
+						assert(prediction.willDestroy === true);
+						assert(prediction.zeroPrice === false);
+						assert(prediction.nftNotApprovedForMarket === true);
+					}
 					expect(await updateListing(updatedPrice))
 						.to.emit('ListingDestroyed')
 						.withArgs(nft.target, tokenId, deployer.address);
@@ -280,22 +478,102 @@ describe('Niov Market', () => {
 			describe('ERRORS', () => {
 				// Public Modifiers
 				it('reverts if anyone but the owner tries to call', async () => {
+					{
+						let permissions = await reader.canUpdateListing(
+							user.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.isListed === false);
+					}
+					{
+						let prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							updatedPrice
+						);
+						assert(prediction.willDestroy === false);
+						assert(prediction.zeroPrice === false);
+						assert(prediction.nftNotApprovedForMarket === false);
+					}
 					await expect(
 						market.updateListing(nft.target, tokenId, price)
 					).to.be.revertedWithCustomError(market, 'NotListed');
 					await createListing();
 					market = market.connect(user);
+					{
+						permissions = await reader.canUpdateListing(
+							user.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.isListed === true);
+					}
+					{
+						prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							updatedPrice
+						);
+						assert(prediction.willDestroy === false);
+						assert(prediction.zeroPrice === false);
+						assert(prediction.nftNotApprovedForMarket === false);
+					}
 					await expect(
 						market.updateListing(nft.target, tokenId, price)
 					).to.be.revertedWithCustomError(market, 'SpenderNotOwner');
 				});
 				// Internal Modifiers
 				it('reverts if there is no listing', async () => {
+					{
+						let permissions = await reader.canUpdateListing(
+							deployer.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === false);
+						assert(permissions.isNftOwner === true);
+						assert(permissions.isListed === false);
+					}
+					{
+						let prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							updatedPrice
+						);
+						assert(prediction.willDestroy === false);
+						assert(prediction.zeroPrice === false);
+						assert(prediction.nftNotApprovedForMarket === false);
+					}
 					await expect(
 						market.updateListing(nft.target, tokenId, price)
 					).to.be.revertedWithCustomError(market, 'NotListed');
 					await createListing();
 					market = market.connect(user);
+					{
+						permissions = await reader.canUpdateListing(
+							user.address,
+							nft.target,
+							tokenId
+						);
+						assert(permissions.canUpdate === false);
+						assert(permissions.isNftOwner === false);
+						assert(permissions.isListed === true);
+					}
+					{
+						prediction = await reader.updateWillDestroyListing(
+							nft.target,
+							tokenId,
+							updatedPrice
+						);
+						assert(prediction.willDestroy === false);
+						assert(prediction.zeroPrice === false);
+						assert(prediction.nftNotApprovedForMarket === false);
+					}
 					await expect(
 						market.updateListing(nft.target, tokenId, price)
 					).to.be.revertedWithCustomError(market, 'SpenderNotOwner');
@@ -311,6 +589,20 @@ describe('Niov Market', () => {
 			describe('EXPECTATIONS', () => {
 				it('transfers the nft to the buyer', async () => {
 					await createListing();
+					{
+						const listing = await readListing();
+						const value = listing.rawValueGas;
+						const permissions = await reader.canAcceptAsk(
+							user.address,
+							nft.target,
+							tokenId,
+							value
+						);
+						assert(permissions.canAccept === true);
+						assert(permissions.isNotNftOwner === true);
+						assert(permissions.isListed === true);
+						assert(permissions.accurateValue === true);
+					}
 					await acceptAsk_Gas();
 					const newOwner = await nft.ownerOf(tokenId);
 					assert(newOwner == user.address);
@@ -354,6 +646,20 @@ describe('Niov Market', () => {
 				// Public Modifiers
 				it('reverts if user is owner', async () => {
 					await createListing();
+					{
+						const listing = await readListing();
+						const value = listing.rawValueGas;
+						const permissions = await reader.canAcceptAsk(
+							deployer.address,
+							nft.target,
+							tokenId,
+							value
+						);
+						assert(permissions.canAccept === false);
+						assert(permissions.isNotNftOwner === false);
+						assert(permissions.isListed === true);
+						assert(permissions.accurateValue === true);
+					}
 					await expect(
 						market
 							.connect(deployer)
@@ -361,6 +667,18 @@ describe('Niov Market', () => {
 					).to.be.revertedWithCustomError(market, 'SpenderIsOwner');
 				});
 				it('reverts if the item isnt listed', async () => {
+					{
+						const permissions = await reader.canAcceptAsk(
+							user.address,
+							nft.target,
+							tokenId,
+							0
+						);
+						assert(permissions.canAccept === false);
+						assert(permissions.isNotNftOwner === true);
+						assert(permissions.isListed === false);
+						assert(permissions.accurateValue === true);
+					}
 					await expect(
 						market
 							.connect(user)
@@ -370,6 +688,18 @@ describe('Niov Market', () => {
 				// Inline Modifiers
 				it('reverts if the price isnt met', async () => {
 					await createListing();
+					{
+						const permissions = await reader.canAcceptAsk(
+							user.address,
+							nft.target,
+							tokenId,
+							BigZero
+						);
+						assert(permissions.canAccept === false);
+						assert(permissions.isNotNftOwner === true);
+						assert(permissions.isListed === true);
+						assert(permissions.accurateValue === false);
+					}
 					await expect(
 						market
 							.connect(user)
@@ -393,7 +723,12 @@ describe('Niov Market', () => {
 					const expectedBalance = (gasProceeds + initialBalance).toPrecision(
 						14
 					);
-
+					{
+						let canWithdraw = await reader.canWithdrawProceeds(
+							deployer.address
+						);
+						assert(canWithdraw === true);
+					}
 					const txResponse = await withdrawProceeds();
 					const transactionReceipt = await txResponse.wait();
 					const { gasUsed, gasPrice } = transactionReceipt;
@@ -469,6 +804,12 @@ describe('Niov Market', () => {
 			describe('ERRORS', () => {
 				// Inline Modifiers
 				it("doesn't allow 0 proceed withdrawls", async () => {
+					{
+						let canWithdraw = await reader.canWithdrawProceeds(
+							deployer.address
+						);
+						assert(canWithdraw === false);
+					}
 					await expect(withdrawProceeds()).to.be.revertedWithCustomError(
 						market,
 						'NoProceeds'
