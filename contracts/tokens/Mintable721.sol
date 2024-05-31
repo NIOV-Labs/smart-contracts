@@ -7,7 +7,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Contract by github/ctnava || linkedin/ctnava || discord/cat.hemlock
 
-contract Mintable721 is ERC721, Ownable {
+interface IMintable721 {
+    /**
+     * @dev Returns user inventory as array of tokenIds
+     */
+    function inventoryOf(
+        address operator
+    ) external view returns (uint[] memory);
+
+    /**
+     * @dev Mints the recipient a new token and returns its id
+     */
+    function mintTo(address to) external returns (uint);
+}
+
+contract Mintable721 is ERC721, Ownable, IMintable721 {
     using Strings for uint;
     uint public numTokens;
     string private baseUri;

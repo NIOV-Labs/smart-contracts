@@ -3,6 +3,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import {IPaymentProcessor, PaymentProcessorData} from "../NiovMarket/PaymentProcessor/PaymentProcessor.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IMintable721} from "../tokens/Mintable721.sol";
 
 contract MarketReader is PaymentProcessorData {
     address public market;
@@ -15,6 +16,9 @@ contract MarketReader is PaymentProcessorData {
         return IPaymentProcessor(market);
     }
 
+    /////////////
+    // GETTERS //
+    /////////////
     /**
      * @notice Frontend READ operation for an array of ListingData
      * @param nftAddress Address of NFT contract (typically the ABT contract)
@@ -26,9 +30,16 @@ contract MarketReader is PaymentProcessorData {
         uint[] memory tokenIds
     ) public view returns (ListingData[] memory result) {
         result = new ListingData[](tokenIds.length);
-        for (uint i = 0; i < tokenIds.length; i++) {
+        for (uint i = 0; i < tokenIds.length; i++)
             result[i] = _market().readListing(nftAddress, tokenIds[i]);
-        }
+    }
+
+    function abtListingsOf(
+        address nftAddress,
+        address operator
+    ) public view returns (ListingData[] memory result) {
+        uint[] memory tokenIds = IMintable721(nftAddress).inventoryOf(operator);
+        result = readListings(nftAddress, tokenIds);
     }
 
     ///////////////
