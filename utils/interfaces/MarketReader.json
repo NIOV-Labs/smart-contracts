@@ -15,6 +15,52 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "nftAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        }
+      ],
+      "name": "abtListingsOf",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "seller",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "usdPennyPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rawValueGas",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rawValueTkn",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct PaymentProcessorData.ListingData[]",
+          "name": "result",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "operator",
           "type": "address"
         },

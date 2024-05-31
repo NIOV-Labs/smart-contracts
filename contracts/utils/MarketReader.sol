@@ -37,8 +37,12 @@ contract MarketReader is PaymentProcessorData {
     function abtListingsOf(
         address nftAddress,
         address operator
-    ) public view returns (ListingData[] memory result) {
-        uint[] memory tokenIds = IMintable721(nftAddress).inventoryOf(operator);
+    )
+        public
+        view
+        returns (uint[] memory tokenIds, ListingData[] memory result)
+    {
+        tokenIds = IMintable721(nftAddress).inventoryOf(operator);
         result = readListings(nftAddress, tokenIds);
     }
 
