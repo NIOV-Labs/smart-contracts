@@ -40,10 +40,10 @@ contract MarketReader is PaymentProcessorData {
     )
         public
         view
-        returns (uint[] memory tokenIds, ListingData[] memory result)
+        returns (uint[] memory tokenIds, ListingData[] memory listingData)
     {
         tokenIds = IMintable721(nftAddress).inventoryOf(operator);
-        result = readListings(nftAddress, tokenIds);
+        listingData = readListings(nftAddress, tokenIds);
     }
 
     ///////////////
