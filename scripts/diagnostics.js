@@ -1,5 +1,8 @@
-const { ethers, config } = require('hardhat');
-console.log(config);
+// const { ethers, config } = require('hardhat');
+// console.log(config);
+
+const Config = require('../config');
+new Config(true);
 
 // const pkgVersion = (pkgName) => {
 // 	try {
