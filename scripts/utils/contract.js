@@ -1,5 +1,5 @@
 const ethers = require('ethers');
-const Cache = require('../Cache');
+const Cache = require('../../utils/Cache');
 
 function retrieve(name, chainId, signer) {
 	const { abi } = new Cache(`./utils/interfaces/${name}.json`).load();

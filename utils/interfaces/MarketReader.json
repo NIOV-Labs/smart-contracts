@@ -27,6 +27,11 @@
       "name": "abtListingsOf",
       "outputs": [
         {
+          "internalType": "uint256[]",
+          "name": "tokenIds",
+          "type": "uint256[]"
+        },
+        {
           "components": [
             {
               "internalType": "address",
@@ -50,7 +55,7 @@
             }
           ],
           "internalType": "struct PaymentProcessorData.ListingData[]",
-          "name": "result",
+          "name": "listingData",
           "type": "tuple[]"
         }
       ],

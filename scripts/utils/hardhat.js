@@ -10,7 +10,7 @@ const balanceOf = async (signer) => {
 };
 
 const envSigners = () => {
-	const privateKeys = config.networks.mainnet.accounts;
+	const privateKeys = config.networks.homestead.accounts;
 	return privateKeys.map((pKey) => new ethers.Wallet(pKey, ethers.provider));
 };
 

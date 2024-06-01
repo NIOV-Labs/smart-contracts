@@ -1,6 +1,6 @@
 const fs = require('fs');
 require('@nomicfoundation/hardhat-toolbox');
-const Config = require('./utils/evm/Config');
+const Config = require('./config');
 
 if (!fs.existsSync(`./utils/deploymentMap`))
 	fs.mkdirSync('./utils/deploymentMap');
@@ -28,4 +28,4 @@ if (!fs.existsSync(`.env`)) {
 //   }
 // );
 
-module.exports = { ...new Config() };
+module.exports = { ...new Config(false) };

@@ -1,5 +1,5 @@
-const EvmConfig = require('../utils/evm/Config');
-new EvmConfig(true);
+const { ethers, config } = require('hardhat');
+console.log(config);
 
 // const pkgVersion = (pkgName) => {
 // 	try {

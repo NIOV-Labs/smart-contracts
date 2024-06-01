@@ -1,6 +1,6 @@
 const hre = require('hardhat');
 const { ethers } = hre;
-const contractUtils = require('../utils/evm/contract');
+const contractUtils = require('./utils/contract');
 
 const listNfts = async (environment) => {
 	const { deployer, accounts, market, abt, reader } = environment;
@@ -104,7 +104,7 @@ const withdrawEarnings = async (environment) => {
 (async () => {
 	console.log('Gathering Signer Objects...');
 	const provider = ethers.provider;
-	const privateKeys = hre.config.networks.mainnet.accounts;
+	const privateKeys = hre.config.networks.homestead.accounts;
 	const deployer = new ethers.Wallet(privateKeys[0], provider);
 	let accounts = await ethers.getSigners();
 

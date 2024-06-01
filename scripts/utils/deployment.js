@@ -2,10 +2,10 @@ const fs = require('fs');
 const hre = require('hardhat');
 const { ethers, artifacts, config, network } = hre;
 const Cache = require('../../utils/Cache');
-const { verifiable } = require('../../utils/evm/credentials');
+const { verifiable } = require('../../config/networks');
 
 const primarySigner = () => {
-	const privateKeys = config.networks.mainnet.accounts;
+	const privateKeys = config.networks.homestead.accounts;
 	const signer = new ethers.Wallet(privateKeys[0], ethers.provider);
 	return signer;
 };
