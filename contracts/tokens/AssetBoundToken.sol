@@ -10,7 +10,7 @@ contract AssetBoundToken is Mintable721 {
         Mintable721(
             "Asset Bound Token",
             "ABT",
-            "http://localhost:3000/api/token/"
+            "https://beta.niovlabs.io/api/token/"
         )
     {}
 }

@@ -43,20 +43,6 @@ const mainnets = {
 		scannerApiUrl: 'https://api-zkevm.polygonscan.com/api',
 		scannerApiKey: process.env.POLYGONSCAN_ZKEVM_API_KEY,
 	},
-	zksync: {
-		id: 324,
-		chainId: '0x144',
-		rpcUrls: ['https://mainnet.era.zksync.io'],
-		chainName: 'zkSync Mainnet',
-		nativeCurrency: {
-			name: 'Ether',
-			symbol: 'ETH',
-			decimals: 18,
-		},
-		blockExplorerUrls: ['https://era.zksync.network/'],
-		scannerApiUrl: 'https://api-era.zksync.network/api',
-		scannerApiKey: process.env.ZKSCAN_API_KEY,
-	},
 };
 
 const testnets = {
@@ -101,20 +87,6 @@ const testnets = {
 		blockExplorerUrls: ['https://cardona-zkevm.polygonscan.com/'],
 		scannerApiUrl: 'https://api-cardona-zkevm.polygonscan.com/api',
 		scannerApiKey: process.env.POLYGONSCAN_ZKEVM_API_KEY,
-	},
-	zkTestnet: {
-		id: 300,
-		chainId: '0x12c',
-		rpcUrls: ['https://sepolia.era.zksync.dev/'],
-		chainName: 'zkSync Sepolia Testnet',
-		nativeCurrency: {
-			name: 'Ether',
-			symbol: 'ETH',
-			decimals: 18,
-		},
-		blockExplorerUrls: ['https://sepolia.explorer.zksync.io/'],
-		scannerApiUrl: 'https://api-sepolia-era.zksync.network/api',
-		scannerApiKey: process.env.ZKSCAN_API_KEY,
 	},
 };
 
