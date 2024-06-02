@@ -3,6 +3,7 @@ const hre = require('hardhat');
 const { ethers, artifacts, config, network } = hre;
 const Cache = require('../../utils/Cache');
 const { verifiable } = require('../../config/networks');
+const { isVerified } = require('./etherscan');
 
 const primarySigner = () => {
 	const privateKeys = config.networks.homestead.accounts;
@@ -51,28 +52,25 @@ async function runDeployment(contractName, args = []) {
 	return NewContract;
 }
 
-async function verificationLoop(options) {
-	const waitTime = 5;
-	await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
+async function verification(options) {
 	try {
 		console.log('|| Verifying...');
 		await hre.run('verify:verify', options);
-		console.log('|||| Verified!');
 	} catch (e) {
-		if (
-			e.toString().split('\n')[2] ===
-			`Reason: The Etherscan API responded that the address ${options.address} does not have bytecode.`
-		) {
-			console.log(
-				`|||| Contract not indexed yet, retrying in ${waitTime} seconds...`
-			);
-			await verificationLoop(options);
-		} else throw e;
+		console.log(e);
 	}
+	const verified = await isVerified(options.address);
+	if (!verified) {
+		console.log('|||| Not Verified! Retrying...');
+		const waitTime = 5;
+		await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
+		await verification;
+	} else console.log('|||| Verified!');
 }
 
 async function andVerify(contractName, args = [], fqn) {
 	const NewContract = await runDeployment(contractName, args);
+
 	if (!verifiable(network.name)) return NewContract;
 
 	const options = {
@@ -80,9 +78,9 @@ async function andVerify(contractName, args = [], fqn) {
 		constructorArguments: args.filter((arg) => typeof arg !== typeof {}),
 		contract: fqn ? fqn : undefined,
 	};
-	await verificationLoop(options);
+	await verification(options);
 
 	return NewContract;
 }
 
-module.exports = { transferAbi, runDeployment, andVerify };
+module.exports = { transferAbi, runDeployment, andVerify, verification };

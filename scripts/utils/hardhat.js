@@ -1,4 +1,5 @@
 const { ethers, config } = require('hardhat');
+const { isTestnet } = require('../../config/common/rpcs');
 
 const isLocalhost = (chainId) => {
 	return [31337, 1337].includes(parseInt(chainId));
@@ -50,6 +51,7 @@ async function checkBalances() {
 }
 
 module.exports = {
+	isTestnet,
 	isLocalhost,
 	balanceOf,
 	envSigners,

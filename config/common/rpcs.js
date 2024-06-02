@@ -1,8 +1,10 @@
+require('dotenv').config();
+
 const mainnets = {
 	homestead: {
 		id: 1,
 		chainId: '0x1',
-		rpcUrls: ['https://mainnet.infura.io/v3/'],
+		rpcUrls: ['https://rpc.ankr.com/eth/'],
 		chainName: 'Ethereum Mainnet',
 		nativeCurrency: {
 			name: 'Ether',
@@ -10,6 +12,8 @@ const mainnets = {
 			decimals: 18,
 		},
 		blockExplorerUrls: ['https://etherscan.io/'],
+		scannerApiUrl: 'https://api.etherscan.io/api',
+		scannerApiKey: process.env.ETHERSCAN_API_KEY,
 	},
 	polygon: {
 		id: 137,
@@ -22,6 +26,8 @@ const mainnets = {
 			decimals: 18,
 		},
 		blockExplorerUrls: ['https://polygonscan.com/'],
+		scannerApiUrl: 'https://api.polygonscan.com/api',
+		scannerApiKey: process.env.POLYGONSCAN_API_KEY,
 	},
 	polygonZkevm: {
 		id: 1101,
@@ -34,6 +40,8 @@ const mainnets = {
 			decimals: 18,
 		},
 		blockExplorerUrls: ['https://zkevm.polygonscan.com/'],
+		scannerApiUrl: 'https://api-zkevm.polygonscan.com/api',
+		scannerApiKey: process.env.POLYGONSCAN_ZKEVM_API_KEY,
 	},
 	zksync: {
 		id: 324,
@@ -46,8 +54,11 @@ const mainnets = {
 			decimals: 18,
 		},
 		blockExplorerUrls: ['https://explorer.zksync.io'],
+		scannerApiUrl: '',
+		scannerApiKey: '',
 	},
 };
+
 const testnets = {
 	sepolia: {
 		id: 11155111,
@@ -60,18 +71,22 @@ const testnets = {
 			decimals: 18,
 		},
 		blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+		scannerApiUrl: 'https://api-sepolia.etherscan.io/api',
+		scannerApiKey: process.env.ETHERSCAN_API_KEY,
 	},
 	polygonAmoy: {
 		id: 80002,
 		chainId: '0x13882',
-		rpcUrls: ['https://polygon-amoy.drpc.org/'],
+		rpcUrls: ['https://polygon-amoy.blockpi.network/v1/rpc/public/'],
 		chainName: 'Amoy',
 		nativeCurrency: {
 			name: 'MATIC',
 			symbol: 'MATIC',
 			decimals: 18,
 		},
-		blockExplorerUrls: ['https://www.oklink.com/amoy/'],
+		blockExplorerUrls: ['https://amoy.polygonscan.com/'],
+		scannerApiUrl: 'https://api-amoy.polygonscan.com/api',
+		scannerApiKey: process.env.POLYGONSCAN_API_KEY,
 	},
 	polygonCardona: {
 		id: 2442,
@@ -83,7 +98,9 @@ const testnets = {
 			symbol: 'ETH',
 			decimals: 18,
 		},
-		blockExplorerUrls: ['https://www.oklink.com/amoy/'],
+		blockExplorerUrls: ['https://cardona-zkevm.polygonscan.com/'],
+		scannerApiUrl: 'https://api-cardona-zkevm.polygonscan.com/api',
+		scannerApiKey: process.env.POLYGONSCAN_ZKEVM_API_KEY,
 	},
 	zksyncSepolia: {
 		id: 300,
@@ -96,7 +113,15 @@ const testnets = {
 			decimals: 18,
 		},
 		blockExplorerUrls: ['https://sepolia.explorer.zksync.io/'],
+		scannerApiUrl: '',
+		scannerApiKey: '',
 	},
 };
 
-module.exports = { mainnets, testnets };
+const isTestnet = (chainId) => {
+	for (const name of Object.keys(testnets))
+		if (testnets[name].id === parseInt(chainId)) return true;
+	return false;
+};
+
+module.exports = { mainnets, testnets, isTestnet };

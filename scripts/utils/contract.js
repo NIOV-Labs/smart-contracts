@@ -1,16 +1,19 @@
 const ethers = require('ethers');
 const Cache = require('../../utils/Cache');
 
-function retrieve(name, chainId, signer) {
-	const { abi } = new Cache(`./utils/interfaces/${name}.json`).load();
+const address = (name, chainId) => {
 	const deploymentMap = new Cache(`./utils/deploymentMap/${chainId}.json`);
-	const address = deploymentMap.load()[name];
-	return new ethers.Contract(address, abi, signer);
+	return deploymentMap.load()[name];
+};
+
+const abi = (name) => new Cache(`./utils/interfaces/${name}.json`).load().abi;
+
+function retrieve(name, chainId, signer) {
+	return new ethers.Contract(address(name, chainId), abi(name), signer);
 }
 
-function interface(name, address, signer) {
-	const { abi } = new Cache(`./utils/interfaces/${name}.json`).load();
-	return new ethers.Contract(address, abi, signer);
+function interface(name, target, signer) {
+	return new ethers.Contract(target, abi(name), signer);
 }
 
-module.exports = { retrieve, interface };
+module.exports = { retrieve, interface, address, abi };

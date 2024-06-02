@@ -1,7 +1,7 @@
 // require('../utils/evm/diagnostics');
 const hre = require('hardhat');
 const { ethers } = hre;
-const { isLocalhost, checkBalances } = require('./utils/hardhat');
+const { isTestnet, isLocalhost, checkBalances } = require('./utils/hardhat');
 const deployment = require('./utils/deployment');
 const oracles = require('./utils/oracles');
 
@@ -16,23 +16,40 @@ function xfer(contractName) {
 	console.log('\nRunning Deployment!');
 	const { chainId } = await ethers.provider.getNetwork();
 	const isDev = isLocalhost(chainId);
+	const notMainnet = isDev || isTestnet(chainId);
 
-	let EthereumLinkSim, PolygonLinkSim, WETH9, WMATIC;
+	let EthereumLinkSim, PolygonLinkSim;
 	if (isDev) {
 		EthereumLinkSim = await deployment.andVerify('EthereumLinkSim');
 		PolygonLinkSim = await deployment.andVerify('PolygonLinkSim');
-		WETH9 = await deployment.andVerify('WETH9');
-		WMATIC = await deployment.andVerify('WMATIC');
 	}
 
-	const AssetBoundToken = await deployment.andVerify('AssetBoundToken');
+	let WETH9, WMATIC;
+	if (notMainnet) {
+		WETH9 = await deployment.andVerify(
+			'WETH9',
+			[],
+			'contracts/mocks/Mock20.sol:WETH9'
+		);
+		WMATIC = await deployment.andVerify(
+			'WMATIC',
+			[],
+			'contracts/mocks/Mock20.sol:WMATIC'
+		);
+	}
+
+	const AssetBoundToken = await deployment.andVerify(
+		'AssetBoundToken',
+		[],
+		'contracts/tokens/AssetBoundToken.sol:AssetBoundToken'
+	);
 
 	const nativeOracle = isDev
 		? EthereumLinkSim.target
 		: oracles[chainId.toString()];
 
 	// TODO get token addresses
-	const nativeToken = isDev ? WETH9.target : WETH9.target;
+	const nativeToken = notMainnet ? WETH9.target : WETH9.target;
 
 	const NiovMarket = await deployment.andVerify('NiovMarket', [
 		nativeOracle,
@@ -43,7 +60,7 @@ function xfer(contractName) {
 		NiovMarket.target,
 	]);
 
-	// xfer('ABT010');
+	// // xfer('ABT010');
 })().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;

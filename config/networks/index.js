@@ -1,18 +1,18 @@
 require('dotenv').config();
-const { mainnets, testnets } = require('./rpcs');
-const { getAccounts } = require('./keys');
+const { mainnets, testnets } = require('../common/rpcs');
+const { getAccounts } = require('./accounts');
 
 const credentials = () => {
 	let combined = {};
 	Object.keys(mainnets).forEach((name) => {
 		combined[name] = {};
 		combined[name].provider = mainnets[name].rpcUrls[0];
-		// combined.scanner = mainnets[name]?.scannerApiKey;
+		combined[name].scanner = mainnets[name].scannerApiKey;
 	});
 	Object.keys(testnets).forEach((name) => {
 		combined[name] = {};
 		combined[name].provider = testnets[name].rpcUrls[0];
-		// combined.scanner = mainnets[name]?.scannerApiKey;
+		combined[name].scanner = testnets[name].scannerApiKey;
 	});
 	return combined;
 };
