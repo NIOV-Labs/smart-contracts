@@ -88,7 +88,7 @@ const testnets = {
 		scannerApiUrl: 'https://api-amoy.polygonscan.com/api',
 		scannerApiKey: process.env.POLYGONSCAN_API_KEY,
 	},
-	polygonCardona: {
+	polygonZkEVMTestnet: {
 		id: 2442,
 		chainId: '0x98a',
 		rpcUrls: ['https://rpc.cardona.zkevm-rpc.com/'],
